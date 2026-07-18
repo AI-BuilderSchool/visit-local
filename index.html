@@ -42,6 +42,7 @@
     <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m4 6.5 8 6 8-6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
     <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7.5 10.5V7.5a4.5 4.5 0 0 1 9 0v3" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4.5 20c1.3-3.8 4.3-5.8 7.5-5.8s6.2 2 7.5 5.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.5 3.5h3l1.3 4-2 1.3a11 11 0 0 0 5.4 5.4l1.3-2 4 1.3v3a1.5 1.5 0 0 1-1.6 1.5C11.7 17.6 6.4 12.3 5 6.1A1.5 1.5 0 0 1 6.5 3.5Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol>
   </defs>
 </svg>
 
@@ -269,6 +270,19 @@
   .mypage-category li::before{content:''; position:absolute; left:0; top:.55em; width:5px; height:5px; border-radius:50%; background:var(--gold-soft)}
   .mypage-empty{font-size:.85rem; color:var(--ink-faint); text-align:center; padding:14px 0}
 
+  .reservation-modal{max-width:420px}
+  .auth-field-plain textarea{
+    width:100%; padding:12px 14px; border:1.5px solid var(--line); border-radius:9px;
+    background:var(--bg); color:var(--ink); font:inherit; font-size:.92rem; resize:vertical;
+  }
+  .auth-field-plain textarea:focus{outline:none; border-color:var(--indigo)}
+  .reservation-list-wrap{margin-top:22px; padding-top:18px; border-top:1px solid var(--line)}
+  .reservation-list-title{font-size:.85rem; font-weight:800; color:var(--ink); margin:0 0 10px}
+  .reservation-list{display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto}
+  .reservation-item{border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:.82rem; color:var(--ink-soft)}
+  .reservation-item .r-date{display:block; font-weight:800; color:var(--indigo); font-size:.85rem; margin-bottom:4px}
+  .reservation-item .r-note{margin-top:4px; color:var(--ink-faint)}
+
   .auth-toast{
     position:fixed; top:20px; left:50%; z-index:300;
     display:flex; align-items:center; gap:12px;
@@ -422,6 +436,7 @@
     font-size:.92rem; font-weight:600;
   }
   .quick-site-panel a:hover{background:var(--bg-alt)}
+  .reserve-quick-btn{top:calc(52% - 96px); background:var(--gold)}
   .scroll-top{
     position:fixed; right:22px; bottom:22px; z-index:40; width:46px; height:46px; border-radius:50%;
     background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow);
@@ -880,6 +895,9 @@
       <h3><a href="#info" class="menu-link">여행정보</a></h3>
     </div>
     <div class="menu-col">
+      <h3><a href="#" class="menu-link" id="menuReserveLink">예약하기</a></h3>
+    </div>
+    <div class="menu-col">
       <h3>커뮤니티</h3>
       <ul>
         <li><a href="#" class="menu-link">공지사항</a></li>
@@ -889,6 +907,7 @@
   </div>
 </div>
 
+<button class="quick-menu reserve-quick-btn" id="reserveQuickBtn" type="button">예약하기</button>
 <button class="quick-menu" id="quickSiteBtn" type="button" aria-expanded="false" aria-controls="quickSitePanel">Quick <svg class="ico" viewBox="0 0 24 24"><use href="#i-chev"/></svg></button>
 <div class="quick-site-panel" id="quickSitePanel">
   <a href="https://www.pyeongtaek.go.kr/tour/main.do" target="_blank" rel="noreferrer">평택문화관광 <svg class="ico" viewBox="0 0 24 24"><use href="#i-arrow"/></svg></a>
@@ -947,6 +966,39 @@
     </div>
     <div class="mypage-categories" id="mypageCategories"></div>
     <button type="button" class="auth-logout mypage-logout" id="authLogout">로그아웃</button>
+  </div>
+</div>
+
+<div class="auth-overlay" id="reservationOverlay">
+  <div class="auth-modal reservation-modal" role="dialog" aria-modal="true" aria-labelledby="reservationTitle">
+    <button type="button" class="auth-close" id="reservationClose" aria-label="닫기"><svg class="ico" viewBox="0 0 24 24"><use href="#i-close"/></svg></button>
+    <h2 class="auth-title" id="reservationTitle">예약하기</h2>
+    <p class="auth-sub">방문 예약을 남기면 확인 후 연락드려요</p>
+
+    <form id="reservationForm" novalidate>
+      <div class="auth-field">
+        <svg class="ico" viewBox="0 0 24 24"><use href="#i-user"/></svg>
+        <input type="text" name="name" placeholder="이름" required autocomplete="name">
+      </div>
+      <div class="auth-field">
+        <svg class="ico" viewBox="0 0 24 24"><use href="#i-phone"/></svg>
+        <input type="tel" name="phone" placeholder="연락처 (010-0000-0000)" required autocomplete="tel">
+      </div>
+      <div class="auth-field">
+        <svg class="ico" viewBox="0 0 24 24"><use href="#i-calendar"/></svg>
+        <input type="date" name="res_date" required>
+      </div>
+      <div class="auth-field auth-field-plain">
+        <textarea name="note" placeholder="요청사항 (선택)" rows="3"></textarea>
+      </div>
+      <p class="auth-error" id="reservationError"></p>
+      <button type="submit" class="auth-submit">예약하기</button>
+    </form>
+
+    <div class="reservation-list-wrap">
+      <h3 class="reservation-list-title">내 예약</h3>
+      <div class="reservation-list" id="reservationList"></div>
+    </div>
   </div>
 </div>
 
@@ -1338,12 +1390,20 @@
     var authToast = document.getElementById('authToast');
     var authToastMsg = document.getElementById('authToastMsg');
     var authToastClose = document.getElementById('authToastClose');
+    var reserveQuickBtn = document.getElementById('reserveQuickBtn');
+    var menuReserveLink = document.getElementById('menuReserveLink');
+    var reservationOverlay = document.getElementById('reservationOverlay');
+    var reservationClose = document.getElementById('reservationClose');
+    var reservationForm = document.getElementById('reservationForm');
+    var reservationError = document.getElementById('reservationError');
+    var reservationList = document.getElementById('reservationList');
     if (!authToggle || !authOverlay || !window.supabase) return;
 
     var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     var currentUser = null;
     var myFavorites = [];
+    var myReservations = [];
 
     function setMessage(el, msg, isSuccess){
       el.textContent = msg || '';
@@ -1419,6 +1479,47 @@
       if (mypageOverlay) mypageOverlay.classList.remove('open');
     }
 
+    function loadReservations(){
+      if (!currentUser){
+        myReservations = [];
+        return;
+      }
+      supabaseClient.from('reservations').select('name, phone, res_date, note')
+        .eq('user_id', currentUser.id).order('res_date', { ascending: true }).then(function(res){
+          myReservations = res.data || [];
+          if (reservationOverlay && reservationOverlay.classList.contains('open')) renderReservationList();
+        });
+    }
+
+    function renderReservationList(){
+      if (!reservationList) return;
+      if (!myReservations.length){
+        reservationList.innerHTML = '<p class="mypage-empty">아직 예약 내역이 없어요.</p>';
+        return;
+      }
+      reservationList.innerHTML = myReservations.map(function(r){
+        var noteHtml = r.note ? '<div class="r-note">' + escapeHtml(r.note) + '</div>' : '';
+        return '<div class="reservation-item"><span class="r-date">' + escapeHtml(r.res_date) + '</span>' +
+          escapeHtml(r.name) + ' · ' + escapeHtml(r.phone) + noteHtml + '</div>';
+      }).join('');
+    }
+
+    function openReservationModal(){
+      if (!currentUser){
+        showToast('로그인 후 예약이 가능합니다.');
+        openAuthModal('login');
+        return;
+      }
+      setMessage(reservationError, '');
+      var dateInput = reservationForm.querySelector('input[name="res_date"]');
+      if (dateInput) dateInput.min = new Date().toISOString().slice(0, 10);
+      renderReservationList();
+      reservationOverlay.classList.add('open');
+    }
+    function closeReservationModal(){
+      if (reservationOverlay) reservationOverlay.classList.remove('open');
+    }
+
     var toastTimer = null;
     function showToast(msg){
       if (!authToast) return;
@@ -1472,7 +1573,7 @@
       if (e.target === authOverlay) closeAuthModal();
     });
     document.addEventListener('keydown', function(e){
-      if (e.key === 'Escape'){ closeAuthModal(); closeMypage(); hideToast(); }
+      if (e.key === 'Escape'){ closeAuthModal(); closeMypage(); closeReservationModal(); hideToast(); }
     });
     if (tabLogin) tabLogin.addEventListener('click', function(){ switchTab('login'); });
     if (tabSignup) tabSignup.addEventListener('click', function(){ switchTab('signup'); });
@@ -1482,6 +1583,40 @@
       if (e.target === mypageOverlay) closeMypage();
     });
     if (authToastClose) authToastClose.addEventListener('click', hideToast);
+
+    if (reserveQuickBtn) reserveQuickBtn.addEventListener('click', openReservationModal);
+    if (menuReserveLink) menuReserveLink.addEventListener('click', function(e){
+      e.preventDefault();
+      openReservationModal();
+    });
+    if (reservationClose) reservationClose.addEventListener('click', closeReservationModal);
+    if (reservationOverlay) reservationOverlay.addEventListener('click', function(e){
+      if (e.target === reservationOverlay) closeReservationModal();
+    });
+    if (reservationForm) reservationForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      if (!currentUser){ openAuthModal('login'); return; }
+      var data = new FormData(reservationForm);
+      var name = String(data.get('name') || '').trim();
+      var phone = String(data.get('phone') || '').trim();
+      var resDate = String(data.get('res_date') || '');
+      var note = String(data.get('note') || '').trim();
+      if (!name) { setMessage(reservationError, '이름을 입력해주세요.'); return; }
+      if (!phone) { setMessage(reservationError, '연락처를 입력해주세요.'); return; }
+      if (!resDate) { setMessage(reservationError, '희망 날짜를 선택해주세요.'); return; }
+      var submitBtn = reservationForm.querySelector('.auth-submit');
+      submitBtn.disabled = true;
+      setMessage(reservationError, '');
+      supabaseClient.from('reservations').insert({
+        user_id: currentUser.id, name: name, phone: phone, res_date: resDate, note: note
+      }).then(function(res){
+        submitBtn.disabled = false;
+        if (res.error){ setMessage(reservationError, friendlyError(res.error)); return; }
+        reservationForm.reset();
+        loadReservations();
+        showToast('예약이 접수되었습니다.');
+      });
+    });
 
     heartBtns.forEach(function(btn){
       btn.addEventListener('click', function(e){
@@ -1556,11 +1691,13 @@
       currentUser = session ? session.user : null;
       renderAuthState(currentUser);
       loadFavorites();
+      loadReservations();
     });
     supabaseClient.auth.getSession().then(function(res){
       currentUser = res.data && res.data.session ? res.data.session.user : null;
       renderAuthState(currentUser);
       loadFavorites();
+      loadReservations();
     });
   })();
 
