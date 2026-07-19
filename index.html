@@ -684,6 +684,7 @@
   .photo-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:26px; position:relative; z-index:1}
   @media (max-width:900px){.photo-grid{grid-template-columns:repeat(2,1fr)}}
   @media (max-width:520px){.photo-grid{grid-template-columns:1fr}}
+  .explore-empty{grid-column:1 / -1; text-align:center; color:var(--ink-faint); font-size:.9rem; padding:60px 0}
   .photo-card{display:flex; flex-direction:column; gap:14px}
   .photo-art{aspect-ratio:4/3.6; border-radius:14px; overflow:hidden; position:relative; box-shadow:var(--shadow)}
   .photo-card h3{font-size:1.12rem; font-weight:800; font-family:var(--font-body); margin:0}
@@ -779,6 +780,9 @@
   .feat-img.is-side::after, .feat-img.is-farside::after{
     content:""; position:absolute; inset:0; background:rgba(0,0,0,.5); pointer-events:none;
   }
+  .feat-thumb{background-size:cover; background-position:center}
+  .feat-empty{background:linear-gradient(180deg, var(--bg-alt), var(--surface)); color:var(--ink-faint)}
+  .feat-img.is-center.has-video{cursor:pointer}
   @media (max-width:760px){
     .feat-img.is-farside{display:none}
     .feat-img.is-side{width:22%}
@@ -1113,6 +1117,11 @@
       </div>
       <div class="mypage-categories" id="mypageCategories"></div>
     </div>
+
+    <div class="mypage-section">
+      <h3 class="mypage-section-title">예약 현황</h3>
+      <div class="reservation-list" id="mypageReservationList"></div>
+    </div>
     <button type="button" class="auth-logout mypage-logout" id="authLogout">로그아웃</button>
   </div>
 </div>
@@ -1227,6 +1236,11 @@
       <h2>에디터 추천여행</h2>
     </div>
 
+    <div class="upc-tabs" data-reveal id="featRegionTabs">
+      <button type="button" class="upc-tab active" data-region="cheonan">천안</button>
+      <button type="button" class="upc-tab" data-region="pyeongtaek">평택</button>
+    </div>
+
     <div class="feat-carousel" data-reveal>
       <button class="feat-arrow prev" id="featPrev" aria-label="이전 코스"><svg class="ico" viewBox="0 0 24 24" style="transform:scaleX(-1)"><use href="#i-tri"/></svg></button>
       <div class="feat-track" id="featTrack">
@@ -1287,13 +1301,13 @@
 
 <section class="section explore-tinted" id="explore">
   <div class="wrap">
-    <a class="more-btn" href="#explore" aria-label="더보기"><svg class="ico" viewBox="0 0 24 24"><use href="#i-plus"/></svg></a>
+    <a class="more-btn" href="board/index.html" aria-label="후기 게시판 바로가기"><svg class="ico" viewBox="0 0 24 24"><use href="#i-plus"/></svg></a>
     <div class="upc-head" data-reveal>
       <span class="eyebrow2">직접 다녀온 사람들의 진짜 후기</span>
       <h2>Discover Local</h2>
     </div>
 
-    <div class="photo-grid" data-reveal>
+    <div class="photo-grid" id="explorePhotoGrid" data-reveal>
       <article class="photo-card">
         <div class="photo-art">
           <div class="scene-valley photo-real-1"></div>
@@ -1574,7 +1588,9 @@
     var mypageProvider = document.getElementById('mypageProvider');
     var mypageTotalCount = document.getElementById('mypageTotalCount');
     var mypageCategories = document.getElementById('mypageCategories');
+    var mypageReservationList = document.getElementById('mypageReservationList');
     var heartBtns = document.querySelectorAll('.heart-btn');
+    var explorePhotoGrid = document.getElementById('explorePhotoGrid');
     var authToast = document.getElementById('authToast');
     var authToastMsg = document.getElementById('authToastMsg');
     var authToastClose = document.getElementById('authToastClose');
@@ -1630,19 +1646,69 @@
       return div.innerHTML;
     }
 
+    function syncHeartActiveStates(){
+      var likedIds = myFavorites.map(function(f){ return f.item_id; });
+      document.querySelectorAll('.heart-btn').forEach(function(btn){
+        btn.classList.toggle('active', likedIds.indexOf(btn.dataset.itemId) !== -1);
+      });
+    }
+
     function loadFavorites(){
       if (!currentUser){
         myFavorites = [];
-        heartBtns.forEach(function(btn){ btn.classList.remove('active'); });
+        syncHeartActiveStates();
         return;
       }
       supabaseClient.from('favorites').select('item_id, title, category').eq('user_id', currentUser.id).then(function(res){
         myFavorites = res.data || [];
-        var likedIds = myFavorites.map(function(f){ return f.item_id; });
-        heartBtns.forEach(function(btn){
-          btn.classList.toggle('active', likedIds.indexOf(btn.dataset.itemId) !== -1);
-        });
+        syncHeartActiveStates();
       });
+    }
+
+    var EXPLORE_SCENE = { '볼거리':'scene-valley', '먹거리':'scene-market', '즐길거리':'scene-bridge', '숙소':'scene-hall' };
+    var EXPLORE_ICON = { '볼거리':'i-mountain', '먹거리':'i-bowl', '즐길거리':'i-play', '숙소':'i-bed' };
+
+    function starsHtml(rating){
+      var n = Math.max(0, Math.min(5, parseInt(rating, 10) || 0));
+      return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n);
+    }
+
+    function loadExploreReviews(){
+      if (!explorePhotoGrid) return;
+      supabaseClient.from('reviews')
+        .select('id, author_name, category, rating, title, content, created_at')
+        .order('rating', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(4)
+        .then(function(res){
+          if (res.error || !res.data || !res.data.length){
+            explorePhotoGrid.innerHTML = '<p class="explore-empty">등록된 게시물이 없습니다.</p>';
+            return;
+          }
+          explorePhotoGrid.innerHTML = res.data.map(function(r){
+            var scene = EXPLORE_SCENE[r.category] || 'scene-valley';
+            var icon = EXPLORE_ICON[r.category] || 'i-mountain';
+            var created = r.created_at ? new Date(r.created_at).toLocaleDateString('ko-KR') : '';
+            var text = r.content.length > 70 ? r.content.slice(0, 70) + '…' : r.content;
+            return '<article class="photo-card">' +
+              '<div class="photo-art">' +
+                '<div class="' + scene + '"></div>' +
+                '<span class="cat-badge">' + escapeHtml(r.category) + '</span>' +
+                '<button class="heart-btn" aria-label="찜하기" data-item-id="review-' + r.id + '" data-title="' + escapeHtml(r.title) + '" data-category="' + escapeHtml(r.category) + '">' +
+                  '<svg class="ico heart-outline" viewBox="0 0 24 24"><use href="#i-heart"/></svg>' +
+                  '<svg class="ico heart-filled" viewBox="0 0 24 24"><use href="#i-heart-fill"/></svg>' +
+                '</button>' +
+                '<div class="hover-overlay"><svg class="ico" viewBox="0 0 24 24"><use href="#' + icon + '"/></svg></div>' +
+              '</div>' +
+              '<h3>' + escapeHtml(r.title) + '</h3>' +
+              '<div class="review-meta"><span class="stars">' + starsHtml(r.rating) + '</span><span class="reviewer">' + escapeHtml(r.author_name) + '</span></div>' +
+              '<p class="review-text">' + escapeHtml(text) + '</p>' +
+              '<div class="review-sub">' + escapeHtml(created) + '</div>' +
+            '</article>';
+          }).join('');
+          bindHeartBtns(explorePhotoGrid.querySelectorAll('.heart-btn'));
+          syncHeartActiveStates();
+        });
     }
 
     function renderMypage(){
@@ -1712,28 +1778,27 @@
       supabaseClient.from('reservations').select('org_name, name, phone, res_date, res_time, visitor_count, note, status')
         .eq('user_id', currentUser.id).order('res_date', { ascending: true }).then(function(res){
           myReservations = res.data || [];
-          if (reservationOverlay && reservationOverlay.classList.contains('open')) renderReservationList();
+          renderReservationList();
         });
     }
 
     function renderReservationList(){
-      if (!reservationList) return;
-      if (!myReservations.length){
-        reservationList.innerHTML = '<p class="mypage-empty">아직 예약 내역이 없어요.</p>';
-        return;
-      }
-      reservationList.innerHTML = myReservations.map(function(r){
-        var status = r.status || '접수중';
-        var statusClass = RESERVATION_STATUS_CLASS[status] || 'r-status-pending';
-        var statusLabel = RESERVATION_STATUS_LABEL[status] || status;
-        var noteHtml = r.note ? '<div class="r-note">' + escapeHtml(r.note) + '</div>' : '';
-        return '<div class="reservation-item">' +
-          '<div class="r-top"><span class="r-org">' + escapeHtml(r.org_name || '') + '</span>' +
-          '<span class="r-status ' + statusClass + '">' + escapeHtml(statusLabel) + '</span></div>' +
-          '<span class="r-date">' + escapeHtml(r.res_date) + ' ' + escapeHtml(r.res_time || '') + ' · 인원 ' + escapeHtml(String(r.visitor_count || '')) + '명</span>' +
-          '<div>' + escapeHtml(r.name) + ' · ' + escapeHtml(r.phone) + '</div>' +
-          noteHtml + '</div>';
-      }).join('');
+      var html = !myReservations.length
+        ? '<p class="mypage-empty">아직 예약 내역이 없어요.</p>'
+        : myReservations.map(function(r){
+            var status = r.status || '접수중';
+            var statusClass = RESERVATION_STATUS_CLASS[status] || 'r-status-pending';
+            var statusLabel = RESERVATION_STATUS_LABEL[status] || status;
+            var noteHtml = r.note ? '<div class="r-note">' + escapeHtml(r.note) + '</div>' : '';
+            return '<div class="reservation-item">' +
+              '<div class="r-top"><span class="r-org">' + escapeHtml(r.org_name || '') + '</span>' +
+              '<span class="r-status ' + statusClass + '">' + escapeHtml(statusLabel) + '</span></div>' +
+              '<span class="r-date">' + escapeHtml(r.res_date) + ' ' + escapeHtml(r.res_time || '') + ' · 인원 ' + escapeHtml(String(r.visitor_count || '')) + '명</span>' +
+              '<div>' + escapeHtml(r.name) + ' · ' + escapeHtml(r.phone) + '</div>' +
+              noteHtml + '</div>';
+          }).join('');
+      if (reservationList) reservationList.innerHTML = html;
+      if (mypageReservationList) mypageReservationList.innerHTML = html;
     }
 
     function openReservationModal(){
@@ -1905,27 +1970,30 @@
       });
     });
 
-    heartBtns.forEach(function(btn){
-      btn.addEventListener('click', function(e){
-        e.preventDefault();
-        if (!currentUser){
-          openAuthModal('login');
-          return;
-        }
-        var itemId = btn.dataset.itemId;
-        var wasActive = btn.classList.contains('active');
-        btn.classList.toggle('active');
-        btn.disabled = true;
-        var request = wasActive
-          ? supabaseClient.from('favorites').delete().eq('user_id', currentUser.id).eq('item_id', itemId)
-          : supabaseClient.from('favorites').insert({ user_id: currentUser.id, item_id: itemId, title: btn.dataset.title, category: btn.dataset.category });
-        request.then(function(res){
-          btn.disabled = false;
-          if (res.error){ btn.classList.toggle('active'); return; }
-          loadFavorites();
+    function bindHeartBtns(list){
+      list.forEach(function(btn){
+        btn.addEventListener('click', function(e){
+          e.preventDefault();
+          if (!currentUser){
+            openAuthModal('login');
+            return;
+          }
+          var itemId = btn.dataset.itemId;
+          var wasActive = btn.classList.contains('active');
+          btn.classList.toggle('active');
+          btn.disabled = true;
+          var request = wasActive
+            ? supabaseClient.from('favorites').delete().eq('user_id', currentUser.id).eq('item_id', itemId)
+            : supabaseClient.from('favorites').insert({ user_id: currentUser.id, item_id: itemId, title: btn.dataset.title, category: btn.dataset.category });
+          request.then(function(res){
+            btn.disabled = false;
+            if (res.error){ btn.classList.toggle('active'); return; }
+            loadFavorites();
+          });
         });
       });
-    });
+    }
+    bindHeartBtns(heartBtns);
 
     formLogin.addEventListener('submit', function(e){
       e.preventDefault();
@@ -1990,6 +2058,7 @@
       loadFavorites();
       loadReservations();
     });
+    loadExploreReviews();
   })();
 
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -2076,23 +2145,31 @@
   // editor courses: shorts-style 2-1-2 carousel (sample photos — swap in real ones later)
   var featTrack = document.getElementById('featTrack');
   if (featTrack){
-    var featItems = [
+    var FEAT_DEFAULT_ITEMS = [
       {cls:'yt-coaster', text:'천안을 롤러코스터로 관광하기'},
       {cls:'yt-top10', text:'천안 가볼만한곳 TOP10'},
       {cls:'yt-buddha', text:'청동대불, 높이 15m·둘레 30m·무게 60t의 청동 좌불'},
       {cls:'yt-sundae', text:'천안여행? 무조건 가야지!!! 병천순대거리 맛집'},
       {cls:'yt-best5', text:'천안, 아산에서 인기 있는 여행지 BEST 5'}
     ];
+    var featItems = FEAT_DEFAULT_ITEMS.slice();
     var featImgs = featTrack.querySelectorAll('.feat-img > div');
     var featCapEl = document.getElementById('featCapCenter');
     var dotsWrap = document.getElementById('featDots');
-    featItems.forEach(function(_, i){
-      var dot = document.createElement('button');
-      dot.className = 'feat-dot' + (i===0?' active':'');
-      dot.setAttribute('aria-label', (i+1)+'번 코스');
-      dot.addEventListener('click', function(){ renderFeat(i); });
-      dotsWrap.appendChild(dot);
-    });
+    var featRegionTabs = document.querySelectorAll('#featRegionTabs .upc-tab');
+
+    function rebuildDots(){
+      dotsWrap.innerHTML = '';
+      featItems.forEach(function(_, i){
+        var dot = document.createElement('button');
+        dot.className = 'feat-dot' + (i===0?' active':'');
+        dot.setAttribute('aria-label', (i+1)+'번 코스');
+        dot.addEventListener('click', function(){ renderFeat(i); });
+        dotsWrap.appendChild(dot);
+      });
+    }
+    rebuildDots();
+
     var featIdx = 0, featTimer;
     function renderFeat(i){
       featIdx = (i + featItems.length) % featItems.length;
@@ -2100,17 +2177,57 @@
       var order = [-2,-1,0,1,2].map(function(o){ return (featIdx+o+len*2)%len; });
       order.forEach(function(itemIdx, slot){
         var it = featItems[itemIdx];
-        featImgs[slot].className = it.cls;
-        if (it.icon){
-          featImgs[slot].innerHTML = '<svg class="ico" viewBox="0 0 24 24" style="width:34%;height:34%;color:#fff;opacity:.9"><use href="#'+it.icon+'"/></svg>';
+        var inner = featImgs[slot];
+        if (it.img){
+          inner.className = 'feat-thumb';
+          inner.style.backgroundImage = "url('" + it.img + "')";
+          inner.innerHTML = '';
         } else {
-          featImgs[slot].innerHTML = '';
+          inner.className = it.cls || 'feat-empty';
+          inner.style.backgroundImage = '';
+          inner.innerHTML = it.icon ? '<svg class="ico" viewBox="0 0 24 24" style="width:34%;height:34%;color:#fff;opacity:.9"><use href="#'+it.icon+'"/></svg>' : '';
         }
       });
       featCapEl.textContent = featItems[featIdx].text;
       dotsWrap.querySelectorAll('.feat-dot').forEach(function(d,i2){ d.classList.toggle('active', i2===featIdx); });
+      var centerWrap = featTrack.children[2];
+      if (centerWrap) centerWrap.classList.toggle('has-video', !!(featItems[featIdx] && featItems[featIdx].videoId));
     }
     renderFeat(0);
+
+    featTrack.addEventListener('click', function(e){
+      var centerWrap = featTrack.children[2];
+      if (!centerWrap || !centerWrap.contains(e.target)) return;
+      var it = featItems[featIdx];
+      if (it && it.videoId) window.open('https://www.youtube.com/watch?v=' + it.videoId, '_blank', 'noopener');
+    });
+
+    function loadFeatRegion(regionKey){
+      fetch('/api/youtube?region=' + encodeURIComponent(regionKey))
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          if (!data || !data.items || !data.items.length){
+            featItems = [{cls:'feat-empty', text:(data && data.label ? data.label : '') + ' 관련 영상을 아직 불러올 수 없어요.'}];
+          } else {
+            featItems = data.items.map(function(v){ return { img: v.thumbnail, text: v.title, videoId: v.videoId }; });
+          }
+          rebuildDots();
+          renderFeat(0);
+        })
+        .catch(function(){
+          featItems = [{cls:'feat-empty', text:'영상을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'}];
+          rebuildDots();
+          renderFeat(0);
+        });
+    }
+    featRegionTabs.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        if (btn.classList.contains('active')) return;
+        featRegionTabs.forEach(function(b){ b.classList.toggle('active', b===btn); });
+        loadFeatRegion(btn.dataset.region);
+      });
+    });
+    loadFeatRegion('cheonan');
 
     var featPrev = document.getElementById('featPrev'), featNext = document.getElementById('featNext');
     var miniPrev = document.getElementById('featMiniPrev'), miniNext = document.getElementById('featMiniNext'), miniPause = document.getElementById('featMiniPause');

@@ -100,6 +100,19 @@
   <button type="button" class="btn" style="width:auto; padding:10px 20px; margin-top:16px; background:var(--surface); border:1.5px solid var(--line)" id="deniedLogout">다른 계정으로 로그인</button>
 </div>
 
+<div class="login-screen" id="adminPwScreen" style="display:none">
+  <div class="login-card">
+    <h1>관리자 인증</h1>
+    <p><span id="adminPwEmail"></span> 님, 관리자 암호를 입력해주세요</p>
+    <form id="adminPwForm">
+      <div class="field"><input type="password" name="adminPassword" placeholder="관리자 암호" required></div>
+      <p class="msg" id="adminPwMsg"></p>
+      <button type="submit" class="btn btn-primary">확인</button>
+    </form>
+    <button type="button" class="btn" style="margin-top:10px; background:var(--surface); border:1.5px solid var(--line)" id="adminPwLogout">다른 계정으로 로그인</button>
+  </div>
+</div>
+
 <div class="dash" id="dash">
   <div class="dash-head">
     <h1>예약 관리</h1>
@@ -132,6 +145,11 @@
 
   var loginScreen = document.getElementById('loginScreen');
   var deniedScreen = document.getElementById('deniedScreen');
+  var adminPwScreen = document.getElementById('adminPwScreen');
+  var adminPwEmail = document.getElementById('adminPwEmail');
+  var adminPwForm = document.getElementById('adminPwForm');
+  var adminPwMsg = document.getElementById('adminPwMsg');
+  var adminPwLogout = document.getElementById('adminPwLogout');
   var dash = document.getElementById('dash');
   var loginForm = document.getElementById('loginForm');
   var loginMsg = document.getElementById('loginMsg');
@@ -140,12 +158,14 @@
   var deniedLogout = document.getElementById('deniedLogout');
   var whoEmail = document.getElementById('whoEmail');
   var resTableBody = document.getElementById('resTableBody');
+  var pendingAdminUser = null;
 
   var STATUS_OPTIONS = ['접수중', '확정', '보류', '취소'];
 
   function showScreen(name){
     loginScreen.classList.toggle('show', name === 'login');
     loginScreen.style.display = name === 'login' ? 'flex' : 'none';
+    adminPwScreen.style.display = name === 'adminpw' ? 'flex' : 'none';
     deniedScreen.classList.toggle('show', name === 'denied');
     dash.classList.toggle('show', name === 'dash');
   }
@@ -215,9 +235,10 @@
         showScreen('denied');
         return;
       }
-      whoEmail.textContent = user.email;
-      showScreen('dash');
-      loadReservations();
+      pendingAdminUser = user;
+      adminPwEmail.textContent = user.email;
+      adminPwMsg.textContent = '';
+      showScreen('adminpw');
     });
   }
 
@@ -247,11 +268,30 @@
     });
   });
 
+  adminPwForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var data = new FormData(adminPwForm);
+    var pw = String(data.get('adminPassword') || '');
+    adminPwMsg.textContent = '';
+    supabaseClient.rpc('verify_admin_password', { p_password: pw }).then(function(res){
+      if (res.error || res.data !== true){
+        adminPwMsg.textContent = '관리자 암호가 올바르지 않습니다.';
+        return;
+      }
+      whoEmail.textContent = pendingAdminUser.email;
+      showScreen('dash');
+      loadReservations();
+    });
+  });
+
   function doLogout(){
+    pendingAdminUser = null;
+    adminPwForm.reset();
     supabaseClient.auth.signOut();
   }
   logoutBtn.addEventListener('click', doLogout);
   deniedLogout.addEventListener('click', doLogout);
+  adminPwLogout.addEventListener('click', doLogout);
 })();
 </script>
 </body>
