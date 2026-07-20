@@ -229,6 +229,7 @@
   function loadReviews(){
     supabaseClient.from('reviews')
       .select('author_name, category, rating, title, content, photo_url, created_at')
+      .eq('hidden', false)
       .order('created_at', { ascending: false })
       .then(function(res){
         if (res.error){

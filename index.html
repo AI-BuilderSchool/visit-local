@@ -1666,6 +1666,7 @@
       if (!explorePhotoGrid) return;
       supabaseClient.from('reviews')
         .select('id, author_name, category, rating, title, content, photo_url, created_at')
+        .eq('hidden', false)
         .order('rating', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(4)

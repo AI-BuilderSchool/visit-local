@@ -201,6 +201,7 @@
   function loadQuestions(){
     supabaseClient.from('questions')
       .select('id, author_name, title, content, answer, answered_at, created_at')
+      .eq('hidden', false)
       .order('created_at', { ascending: false })
       .then(function(res){
         if (res.error){

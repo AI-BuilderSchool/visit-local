@@ -32,11 +32,14 @@
   @media (max-width:400px){ .login-card{padding:26px 18px} }
   .login-card p{color:var(--ink-soft); font-size:.88rem; margin:6px 0 22px}
   .field{position:relative; margin-bottom:12px}
-  .field input{
+  .field input, .field textarea{
     width:100%; padding:12px 14px; border:1.5px solid var(--line); border-radius:9px;
     background:var(--bg); color:var(--ink); font:inherit; font-size:.92rem;
   }
-  .field input:focus{outline:none; border-color:var(--indigo)}
+  .field textarea{resize:vertical; min-height:90px}
+  .field input:focus, .field textarea:focus{outline:none; border-color:var(--indigo)}
+  .modal-card-left{text-align:left}
+  .modal-card-left h1{text-align:center; margin-bottom:4px}
   .btn{width:100%; padding:12px; border-radius:9px; border:none; font-weight:800; font-size:.92rem; margin-top:6px}
   .btn-primary{background:var(--indigo); color:#fff}
   .btn-google{
@@ -106,6 +109,14 @@
   }
   .qa-status{font-size:.72rem; font-weight:700; padding:4px 10px; border-radius:999px; background:var(--bg-alt); color:var(--ink-soft)}
   .qa-status.answered{background:color-mix(in srgb, var(--sage) 18%, transparent); color:var(--sage)}
+
+  .row-actions{display:flex; gap:6px; flex-wrap:wrap}
+  .btn-secondary{
+    background:none; border:1.5px solid var(--line); border-radius:8px; padding:6px 12px;
+    color:var(--indigo); font-weight:700; font-size:.78rem;
+  }
+  .vis-status{font-size:.72rem; font-weight:700; padding:4px 10px; border-radius:999px; background:color-mix(in srgb, var(--sage) 18%, transparent); color:var(--sage)}
+  .vis-status.is-hidden{background:color-mix(in srgb, var(--brick) 18%, transparent); color:var(--brick)}
 
   @media (max-width:640px){
     .dash{padding:20px 14px 48px}
@@ -258,10 +269,19 @@
         </div>
 
         <div class="board-subpanel show" id="boardPanelDiscover">
+          <form class="notice-form" id="reviewForm">
+            <input type="text" id="reviewTitle" placeholder="제목" maxlength="80" required>
+            <textarea id="reviewContent" placeholder="내용" maxlength="2000" required></textarea>
+            <input type="text" id="reviewCategory" placeholder="카테고리">
+            <input type="number" id="reviewRating" placeholder="별점 (1~5)" min="1" max="5">
+            <input type="text" id="reviewPhotoUrl" placeholder="사진 URL (선택)">
+            <p class="msg" id="reviewMsg"></p>
+            <button type="submit" class="btn">게시물 등록</button>
+          </form>
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>사진</th><th>제목</th><th>내용</th><th>작성자</th><th>카테고리</th><th>별점</th><th>작성일</th><th></th></tr>
+                <tr><th>사진</th><th>제목</th><th>내용</th><th>작성자</th><th>카테고리</th><th>별점</th><th>작성일</th><th>공개상태</th><th>관리</th></tr>
               </thead>
               <tbody id="reviewTableBody"></tbody>
             </table>
@@ -278,7 +298,7 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>제목</th><th>내용</th><th>작성일</th><th></th></tr>
+                <tr><th>제목</th><th>내용</th><th>작성일</th><th>관리</th></tr>
               </thead>
               <tbody id="noticeTableBody"></tbody>
             </table>
@@ -286,10 +306,16 @@
         </div>
 
         <div class="board-subpanel" id="boardPanelQna">
+          <form class="notice-form" id="qnaForm">
+            <input type="text" id="qnaTitle" placeholder="제목" maxlength="80" required>
+            <textarea id="qnaContent" placeholder="내용" maxlength="2000" required></textarea>
+            <p class="msg" id="qnaFormMsg"></p>
+            <button type="submit" class="btn">게시물 등록</button>
+          </form>
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>상태</th><th>제목</th><th>내용</th><th>작성자</th><th>작성일</th><th>답변</th><th></th></tr>
+                <tr><th>답변상태</th><th>제목</th><th>내용</th><th>작성자</th><th>작성일</th><th>답변</th><th>공개상태</th><th>관리</th></tr>
               </thead>
               <tbody id="qnaTableBody"></tbody>
             </table>
@@ -311,6 +337,22 @@
       <button type="submit" class="btn btn-primary">변경하기</button>
     </form>
     <button type="button" class="btn" style="margin-top:10px; background:var(--surface); border:1.5px solid var(--line)" id="pwChangeCancel">취소</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="boardEditOverlay">
+  <div class="login-card modal-card-left" style="max-width:420px">
+    <h1 style="font-size:1.2rem">게시물 수정</h1>
+    <form id="boardEditForm">
+      <div class="field"><input type="text" id="editTitle" placeholder="제목" maxlength="80" required></div>
+      <div class="field"><textarea id="editContent" placeholder="내용" maxlength="2000" required></textarea></div>
+      <div class="field" id="editCategoryField" style="display:none"><input type="text" id="editCategory" placeholder="카테고리"></div>
+      <div class="field" id="editRatingField" style="display:none"><input type="number" id="editRating" placeholder="별점 (1~5)" min="1" max="5"></div>
+      <div class="field" id="editPhotoField" style="display:none"><input type="text" id="editPhotoUrl" placeholder="사진 URL"></div>
+      <p class="msg" id="editMsg"></p>
+      <button type="submit" class="btn btn-primary">저장</button>
+    </form>
+    <button type="button" class="btn" style="margin-top:10px; background:var(--surface); border:1.5px solid var(--line)" id="editCancel">취소</button>
   </div>
 </div>
 
@@ -361,6 +403,33 @@
   var noticeTitle = document.getElementById('noticeTitle');
   var noticeContent = document.getElementById('noticeContent');
   var noticeMsg = document.getElementById('noticeMsg');
+
+  var reviewForm = document.getElementById('reviewForm');
+  var reviewTitle = document.getElementById('reviewTitle');
+  var reviewContent = document.getElementById('reviewContent');
+  var reviewCategory = document.getElementById('reviewCategory');
+  var reviewRating = document.getElementById('reviewRating');
+  var reviewPhotoUrl = document.getElementById('reviewPhotoUrl');
+  var reviewMsg = document.getElementById('reviewMsg');
+
+  var qnaForm = document.getElementById('qnaForm');
+  var qnaTitle = document.getElementById('qnaTitle');
+  var qnaContent = document.getElementById('qnaContent');
+  var qnaFormMsg = document.getElementById('qnaFormMsg');
+
+  var boardEditOverlay = document.getElementById('boardEditOverlay');
+  var boardEditForm = document.getElementById('boardEditForm');
+  var editTitle = document.getElementById('editTitle');
+  var editContent = document.getElementById('editContent');
+  var editCategoryField = document.getElementById('editCategoryField');
+  var editCategory = document.getElementById('editCategory');
+  var editRatingField = document.getElementById('editRatingField');
+  var editRating = document.getElementById('editRating');
+  var editPhotoField = document.getElementById('editPhotoField');
+  var editPhotoUrl = document.getElementById('editPhotoUrl');
+  var editMsg = document.getElementById('editMsg');
+  var editCancel = document.getElementById('editCancel');
+  var editTarget = null;
 
   var resSearchName = document.getElementById('resSearchName');
   var resSearchEmail = document.getElementById('resSearchEmail');
@@ -517,14 +586,62 @@
     });
   }
 
+  function openEditModal(table, row){
+    editTarget = { table: table, id: row.id };
+    editTitle.value = row.title || '';
+    editContent.value = row.content || '';
+    editCategoryField.style.display = table === 'reviews' ? '' : 'none';
+    editRatingField.style.display = table === 'reviews' ? '' : 'none';
+    editPhotoField.style.display = table === 'reviews' ? '' : 'none';
+    editCategory.value = row.category || '';
+    editRating.value = row.rating || '';
+    editPhotoUrl.value = row.photo_url || '';
+    editMsg.textContent = '';
+    boardEditOverlay.classList.add('show');
+  }
+
+  editCancel.addEventListener('click', function(){
+    boardEditOverlay.classList.remove('show');
+    editTarget = null;
+  });
+
+  boardEditForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    if (!editTarget) return;
+    var title = editTitle.value.trim();
+    var content = editContent.value.trim();
+    editMsg.textContent = '';
+    if (!title){ editMsg.textContent = '제목을 입력해주세요.'; return; }
+    if (!content){ editMsg.textContent = '내용을 입력해주세요.'; return; }
+    var payload = { title: title, content: content };
+    if (editTarget.table === 'reviews'){
+      payload.category = editCategory.value.trim();
+      payload.rating = editRating.value ? Number(editRating.value) : null;
+      payload.photo_url = editPhotoUrl.value.trim() || null;
+    }
+    var targetTable = editTarget.table;
+    var submitBtn = boardEditForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    supabaseClient.from(targetTable).update(payload).eq('id', editTarget.id).then(function(res){
+      submitBtn.disabled = false;
+      if (res.error){ editMsg.textContent = '수정에 실패했습니다: ' + res.error.message; return; }
+      boardEditOverlay.classList.remove('show');
+      editTarget = null;
+      if (targetTable === 'notices') { loadNotices(); }
+      if (targetTable === 'reviews') { loadReviews(); }
+      if (targetTable === 'questions') { loadQuestions(); }
+    });
+  });
+
   function renderReviewTable(rows){
     if (!rows.length){
-      reviewTableBody.innerHTML = '<tr><td class="empty" colspan="8">등록된 게시물이 없습니다.</td></tr>';
+      reviewTableBody.innerHTML = '<tr><td class="empty" colspan="9">등록된 게시물이 없습니다.</td></tr>';
       return;
     }
     reviewTableBody.innerHTML = rows.map(function(r){
       var created = r.created_at ? new Date(r.created_at).toLocaleString('ko-KR') : '';
       var thumb = r.photo_url ? '<img src="' + escapeHtml(r.photo_url) + '" alt="">' : '<span>-</span>';
+      var hidden = !!r.hidden;
       return '<tr data-id="' + r.id + '">' +
         '<td class="thumb">' + thumb + '</td>' +
         '<td>' + escapeHtml(r.title) + '</td>' +
@@ -533,10 +650,36 @@
         '<td>' + escapeHtml(r.category) + '</td>' +
         '<td>' + escapeHtml(r.rating) + '</td>' +
         '<td>' + escapeHtml(created) + '</td>' +
-        '<td><button type="button" class="btn-danger" data-action="delete-review">삭제</button></td>' +
+        '<td><span class="vis-status' + (hidden ? ' is-hidden' : '') + '">' + (hidden ? '숨김' : '공개') + '</span></td>' +
+        '<td><div class="row-actions">' +
+          '<button type="button" class="btn-secondary" data-action="edit-review">수정</button>' +
+          '<button type="button" class="btn-secondary" data-action="toggle-hide-review">' + (hidden ? '보이기' : '숨기기') + '</button>' +
+          '<button type="button" class="btn-danger" data-action="delete-review">삭제</button>' +
+        '</div></td>' +
         '</tr>';
     }).join('');
 
+    reviewTableBody.querySelectorAll('[data-action="edit-review"]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.closest('tr').getAttribute('data-id');
+        var row = allReviews.filter(function(x){ return String(x.id) === String(id); })[0];
+        if (row) openEditModal('reviews', row);
+      });
+    });
+    reviewTableBody.querySelectorAll('[data-action="toggle-hide-review"]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.closest('tr').getAttribute('data-id');
+        var row = allReviews.filter(function(x){ return String(x.id) === String(id); })[0];
+        if (!row) return;
+        var newHidden = !row.hidden;
+        btn.disabled = true;
+        supabaseClient.from('reviews').update({ hidden: newHidden }).eq('id', id).then(function(res){
+          btn.disabled = false;
+          if (res.error){ alert('처리에 실패했습니다: ' + res.error.message); return; }
+          loadReviews();
+        });
+      });
+    });
     reviewTableBody.querySelectorAll('[data-action="delete-review"]').forEach(function(btn){
       btn.addEventListener('click', function(){
         var id = btn.closest('tr').getAttribute('data-id');
@@ -551,17 +694,41 @@
 
   function loadReviews(){
     supabaseClient.from('reviews')
-      .select('id, author_name, category, rating, title, content, photo_url, created_at')
+      .select('id, author_name, category, rating, title, content, photo_url, hidden, created_at')
       .order('created_at', { ascending: false })
       .then(function(res){
         if (res.error){
-          reviewTableBody.innerHTML = '<tr><td class="empty" colspan="8">불러오기 실패: ' + escapeHtml(res.error.message) + '</td></tr>';
+          reviewTableBody.innerHTML = '<tr><td class="empty" colspan="9">불러오기 실패: ' + escapeHtml(res.error.message) + '</td></tr>';
           return;
         }
         allReviews = res.data || [];
         renderReviewTable(allReviews);
       });
   }
+
+  if (reviewForm) reviewForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var title = reviewTitle.value.trim();
+    var content = reviewContent.value.trim();
+    reviewMsg.textContent = '';
+    if (!title){ reviewMsg.textContent = '제목을 입력해주세요.'; return; }
+    if (!content){ reviewMsg.textContent = '내용을 입력해주세요.'; return; }
+    var submitBtn = reviewForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    supabaseClient.from('reviews').insert({
+      title: title,
+      content: content,
+      category: reviewCategory.value.trim() || null,
+      rating: reviewRating.value ? Number(reviewRating.value) : null,
+      photo_url: reviewPhotoUrl.value.trim() || null,
+      author_name: (pendingAdminUser && pendingAdminUser.email) || '관리자'
+    }).then(function(res){
+      submitBtn.disabled = false;
+      if (res.error){ reviewMsg.textContent = '등록에 실패했습니다: ' + res.error.message; return; }
+      reviewForm.reset();
+      loadReviews();
+    });
+  });
 
   function renderNoticeTable(rows){
     if (!rows.length){
@@ -574,10 +741,20 @@
         '<td>' + escapeHtml(n.title) + '</td>' +
         '<td class="note">' + escapeHtml(n.content) + '</td>' +
         '<td>' + escapeHtml(created) + '</td>' +
-        '<td><button type="button" class="btn-danger" data-action="delete-notice">삭제</button></td>' +
+        '<td><div class="row-actions">' +
+          '<button type="button" class="btn-secondary" data-action="edit-notice">수정</button>' +
+          '<button type="button" class="btn-danger" data-action="delete-notice">삭제</button>' +
+        '</div></td>' +
         '</tr>';
     }).join('');
 
+    noticeTableBody.querySelectorAll('[data-action="edit-notice"]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.closest('tr').getAttribute('data-id');
+        var row = allNotices.filter(function(x){ return String(x.id) === String(id); })[0];
+        if (row) openEditModal('notices', row);
+      });
+    });
     noticeTableBody.querySelectorAll('[data-action="delete-notice"]').forEach(function(btn){
       btn.addEventListener('click', function(){
         var id = btn.closest('tr').getAttribute('data-id');
@@ -627,12 +804,13 @@
 
   function renderQnaTable(rows){
     if (!rows.length){
-      qnaTableBody.innerHTML = '<tr><td class="empty" colspan="7">등록된 질문이 없습니다.</td></tr>';
+      qnaTableBody.innerHTML = '<tr><td class="empty" colspan="8">등록된 질문이 없습니다.</td></tr>';
       return;
     }
     qnaTableBody.innerHTML = rows.map(function(q){
       var created = q.created_at ? new Date(q.created_at).toLocaleString('ko-KR') : '';
       var answered = !!q.answer;
+      var hidden = !!q.hidden;
       return '<tr data-id="' + q.id + '">' +
         '<td><span class="qa-status' + (answered ? ' answered' : '') + '">' + (answered ? '답변완료' : '답변대기') + '</span></td>' +
         '<td>' + escapeHtml(q.title) + '</td>' +
@@ -643,7 +821,12 @@
           '<textarea placeholder="답변 입력">' + escapeHtml(q.answer || '') + '</textarea>' +
           '<button type="button" class="btn-save" data-action="save-answer">답변 저장</button>' +
         '</div></td>' +
-        '<td><button type="button" class="btn-danger" data-action="delete-question">삭제</button></td>' +
+        '<td><span class="vis-status' + (hidden ? ' is-hidden' : '') + '">' + (hidden ? '숨김' : '공개') + '</span></td>' +
+        '<td><div class="row-actions">' +
+          '<button type="button" class="btn-secondary" data-action="edit-question">수정</button>' +
+          '<button type="button" class="btn-secondary" data-action="toggle-hide-question">' + (hidden ? '보이기' : '숨기기') + '</button>' +
+          '<button type="button" class="btn-danger" data-action="delete-question">삭제</button>' +
+        '</div></td>' +
         '</tr>';
     }).join('');
 
@@ -657,6 +840,27 @@
         supabaseClient.from('questions').update({ answer: answer, answered_at: new Date().toISOString() }).eq('id', id).then(function(res){
           btn.disabled = false;
           if (res.error){ alert('답변 저장에 실패했습니다: ' + res.error.message); return; }
+          loadQuestions();
+        });
+      });
+    });
+    qnaTableBody.querySelectorAll('[data-action="edit-question"]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.closest('tr').getAttribute('data-id');
+        var row = allQuestions.filter(function(x){ return String(x.id) === String(id); })[0];
+        if (row) openEditModal('questions', row);
+      });
+    });
+    qnaTableBody.querySelectorAll('[data-action="toggle-hide-question"]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.closest('tr').getAttribute('data-id');
+        var row = allQuestions.filter(function(x){ return String(x.id) === String(id); })[0];
+        if (!row) return;
+        var newHidden = !row.hidden;
+        btn.disabled = true;
+        supabaseClient.from('questions').update({ hidden: newHidden }).eq('id', id).then(function(res){
+          btn.disabled = false;
+          if (res.error){ alert('처리에 실패했습니다: ' + res.error.message); return; }
           loadQuestions();
         });
       });
@@ -675,17 +879,38 @@
 
   function loadQuestions(){
     supabaseClient.from('questions')
-      .select('id, author_name, title, content, answer, answered_at, created_at')
+      .select('id, author_name, title, content, answer, answered_at, hidden, created_at')
       .order('created_at', { ascending: false })
       .then(function(res){
         if (res.error){
-          qnaTableBody.innerHTML = '<tr><td class="empty" colspan="7">불러오기 실패: ' + escapeHtml(res.error.message) + '</td></tr>';
+          qnaTableBody.innerHTML = '<tr><td class="empty" colspan="8">불러오기 실패: ' + escapeHtml(res.error.message) + '</td></tr>';
           return;
         }
         allQuestions = res.data || [];
         renderQnaTable(allQuestions);
       });
   }
+
+  if (qnaForm) qnaForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var title = qnaTitle.value.trim();
+    var content = qnaContent.value.trim();
+    qnaFormMsg.textContent = '';
+    if (!title){ qnaFormMsg.textContent = '제목을 입력해주세요.'; return; }
+    if (!content){ qnaFormMsg.textContent = '내용을 입력해주세요.'; return; }
+    var submitBtn = qnaForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    supabaseClient.from('questions').insert({
+      title: title,
+      content: content,
+      author_name: (pendingAdminUser && pendingAdminUser.email) || '관리자'
+    }).then(function(res){
+      submitBtn.disabled = false;
+      if (res.error){ qnaFormMsg.textContent = '등록에 실패했습니다: ' + res.error.message; return; }
+      qnaForm.reset();
+      loadQuestions();
+    });
+  });
 
   function checkAdminAndRender(user){
     supabaseClient.from('admins').select('user_id').eq('user_id', user.id).then(function(res){
