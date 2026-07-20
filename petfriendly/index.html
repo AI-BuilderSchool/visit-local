@@ -242,7 +242,8 @@
   .pet-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
   @media (max-width:820px){ .pet-grid{grid-template-columns:repeat(2,1fr)} }
   @media (max-width:520px){ .pet-grid{grid-template-columns:1fr} }
-  .pet-card{background:var(--surface); border-radius:14px; box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column}
+  .pet-card{background:var(--surface); border-radius:14px; box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column; transition:box-shadow .6s ease}
+  .pet-card.highlight{box-shadow:0 0 0 3px var(--indigo), var(--shadow)}
   .pet-art{aspect-ratio:1/1; position:relative; overflow:hidden; background:linear-gradient(180deg,#EAF2D8 0%,#B9D9A8 45%,#5C8F5B 100%)}
   .pet-art img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
   .pet-art .ico-fallback{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.85)}
@@ -808,7 +809,7 @@
           var actionsHtml = isMine
             ? '<div class="pet-actions"><button type="button" class="pet-edit-btn" data-id="' + r.id + '">수정</button><button type="button" class="pet-delete-btn" data-id="' + r.id + '">삭제</button></div>'
             : '';
-          return '<article class="pet-card">' +
+          return '<article class="pet-card" id="review-' + r.id + '">' +
             '<div class="pet-art">' + artHtml + '<span class="pet-cat">반려동물동반</span></div>' +
             '<div class="pet-body">' +
               '<span class="pet-stars">' + starsHtml(r.rating) + '</span>' +
@@ -824,7 +825,21 @@
             '</div>' +
           '</article>';
         }).join('');
+        highlightFromQuery();
       });
+  }
+
+  var highlightedOnce = false;
+  function highlightFromQuery(){
+    if (highlightedOnce) return;
+    var targetId = new URLSearchParams(window.location.search).get('id');
+    if (!targetId) return;
+    var el = document.getElementById('review-' + targetId);
+    if (!el) return;
+    highlightedOnce = true;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('highlight');
+    setTimeout(function(){ el.classList.remove('highlight'); }, 2500);
   }
 
   function startEditReview(id){

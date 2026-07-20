@@ -609,7 +609,7 @@
   .pf-photos{display:grid; grid-template-columns:repeat(2,1fr); gap:22px; min-width:0}
   .pf-photos .pf-card:nth-child(3){display:none}
   .pf-empty{grid-column:1 / -1; text-align:center; color:rgba(255,255,255,.6); font-size:.9rem; padding:30px 0}
-  .pf-card{display:flex; flex-direction:column; gap:12px; min-width:0}
+  .pf-card{display:flex; flex-direction:column; gap:12px; min-width:0; cursor:pointer}
   .pf-art{aspect-ratio:1/0.98; border-radius:8px; overflow:hidden; position:relative}
   .pf-cap{
     font-size:1rem; font-weight:500; color:#fff; margin:0;
@@ -707,7 +707,7 @@
   @media (max-width:900px){.photo-grid{grid-template-columns:repeat(2,1fr)}}
   @media (max-width:520px){.photo-grid{grid-template-columns:1fr}}
   .explore-empty{grid-column:1 / -1; text-align:center; color:var(--ink-faint); font-size:.9rem; padding:60px 0}
-  .photo-card{display:flex; flex-direction:column; gap:14px}
+  .photo-card{display:flex; flex-direction:column; gap:14px; cursor:pointer}
   .photo-art{aspect-ratio:4/3.6; border-radius:14px; overflow:hidden; position:relative; box-shadow:var(--shadow)}
   .photo-card h3{font-size:1.12rem; font-weight:800; font-family:var(--font-body); margin:0}
   .photo-card p{font-size:.87rem; color:var(--ink-soft); margin:0; line-height:1.55}
@@ -1594,6 +1594,23 @@
     var heartBtns = document.querySelectorAll('.heart-btn');
     var explorePhotoGrid = document.getElementById('explorePhotoGrid');
     var petPhotoGrid = document.getElementById('petPhotoGrid');
+
+    if (explorePhotoGrid) {
+      explorePhotoGrid.addEventListener('click', function(e){
+        if (e.target.closest('.heart-btn')) return;
+        var card = e.target.closest('.photo-card');
+        if (!card || !card.dataset.reviewId) return;
+        window.location.href = 'board/index.html?id=' + encodeURIComponent(card.dataset.reviewId);
+      });
+    }
+    if (petPhotoGrid) {
+      petPhotoGrid.addEventListener('click', function(e){
+        if (e.target.closest('.heart-btn')) return;
+        var card = e.target.closest('.pf-card');
+        if (!card || !card.dataset.reviewId) return;
+        window.location.href = 'petfriendly/index.html?id=' + encodeURIComponent(card.dataset.reviewId);
+      });
+    }
     var authToast = document.getElementById('authToast');
     var authToastMsg = document.getElementById('authToastMsg');
     var authToastClose = document.getElementById('authToastClose');
@@ -1690,7 +1707,7 @@
             var artHtml = r.photo_url
               ? '<img class="photo-real-img" src="' + escapeHtml(r.photo_url) + '" alt="" loading="lazy">'
               : '<div class="' + scene + '"></div>';
-            return '<article class="photo-card">' +
+            return '<article class="photo-card" data-review-id="' + r.id + '">' +
               '<div class="photo-art">' +
                 artHtml +
                 '<span class="cat-badge">' + escapeHtml(r.category) + '</span>' +
@@ -1730,7 +1747,7 @@
               ? '<img class="photo-real-img" src="' + escapeHtml(r.photo_url) + '" alt="" loading="lazy">'
               : '<div class="scene-willow"></div>';
             var text = r.content.length > 40 ? r.content.slice(0, 40) + '…' : r.content;
-            return '<article class="pf-card">' +
+            return '<article class="pf-card" data-review-id="' + r.id + '">' +
               '<div class="pf-art">' +
                 artHtml +
                 '<button class="heart-btn" aria-label="찜하기" data-item-id="review-' + r.id + '" data-title="' + escapeHtml(r.title) + '" data-category="반려동물동반">' +

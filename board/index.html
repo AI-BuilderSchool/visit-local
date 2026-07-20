@@ -242,7 +242,8 @@
   .divider::before, .divider::after{content:""; flex:1; height:1px; background:var(--line)}
 
   .review-list{display:flex; flex-direction:column; gap:14px}
-  .review-item{background:var(--surface); border-radius:14px; box-shadow:var(--shadow); padding:18px 20px}
+  .review-item{background:var(--surface); border-radius:14px; box-shadow:var(--shadow); padding:18px 20px; transition:box-shadow .6s ease}
+  .review-item.highlight{box-shadow:0 0 0 3px var(--indigo), var(--shadow)}
   .r-top{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px}
   .r-cat{font-size:.7rem; font-weight:700; color:#fff; background:#FF7A29; padding:4px 11px; border-radius:999px}
   .r-stars{color:var(--gold); font-size:.82rem; letter-spacing:1px}
@@ -813,7 +814,7 @@
           var actionsHtml = isMine
             ? '<div class="r-actions"><button type="button" class="r-edit-btn" data-id="' + r.id + '">수정</button><button type="button" class="r-delete-btn" data-id="' + r.id + '">삭제</button></div>'
             : '';
-          return '<article class="review-item">' +
+          return '<article class="review-item" id="review-' + r.id + '">' +
             photoHtml +
             '<div class="r-top"><span class="r-cat">' + escapeHtml(r.category) + '</span><span class="r-stars">' + starsHtml(r.rating) + '</span></div>' +
             '<h3 class="r-title">' + escapeHtml(r.title) + '</h3>' +
@@ -827,7 +828,21 @@
             '</div>' +
             '</article>';
         }).join('');
+        highlightFromQuery();
       });
+  }
+
+  var highlightedOnce = false;
+  function highlightFromQuery(){
+    if (highlightedOnce) return;
+    var targetId = new URLSearchParams(window.location.search).get('id');
+    if (!targetId) return;
+    var el = document.getElementById('review-' + targetId);
+    if (!el) return;
+    highlightedOnce = true;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('highlight');
+    setTimeout(function(){ el.classList.remove('highlight'); }, 2500);
   }
 
   function startEditReview(id){
